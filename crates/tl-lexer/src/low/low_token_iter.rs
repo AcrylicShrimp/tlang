@@ -1,7 +1,4 @@
-use crate::{
-    TokenKind,
-    low::{Cursor, LowToken},
-};
+use crate::low::{Cursor, LowToken, LowTokenKind};
 use unicode_xid::UnicodeXID;
 
 pub fn low_token_iter(mut s: &str) -> impl Iterator<Item = LowToken> {
@@ -14,7 +11,7 @@ pub fn low_token_iter(mut s: &str) -> impl Iterator<Item = LowToken> {
 
         let token = next(s);
         s = &s[token.len as usize..];
-        eof_reached = token.kind == TokenKind::Eof;
+        eof_reached = token.kind == LowTokenKind::Eof;
 
         Some(token)
     })
@@ -28,7 +25,7 @@ fn next(s: impl AsRef<str>) -> LowToken {
         Some(c) => c,
         None => {
             return LowToken {
-                kind: TokenKind::Eof,
+                kind: LowTokenKind::Eof,
                 len: 0,
             };
         }
@@ -37,62 +34,67 @@ fn next(s: impl AsRef<str>) -> LowToken {
     let kind = match c {
         c if is_whitespace_start(c) => {
             cursor.consume_while(is_whitespace_continue);
-            TokenKind::Whitespace
+            LowTokenKind::Whitespace
         }
 
         c if is_doc_comment_start(c, &cursor) => {
             cursor.consume_while(is_doc_comment_continue);
-            // consume trailing `/#`
-            cursor.consume();
-            cursor.consume();
-            TokenKind::DocComment
+
+            if cursor.at(0) == '/' && cursor.at(1) == '#' {
+                // consume trailing `/#`
+                cursor.consume();
+                cursor.consume();
+                LowTokenKind::DocComment
+            } else {
+                LowTokenKind::UnterminatedDocComment
+            }
         }
 
         c if is_comment_start(c) => {
             cursor.consume_while(is_comment_continue);
-            TokenKind::Comment
+            LowTokenKind::Comment
         }
 
         c if is_id_start(c) => {
             cursor.consume_while(is_id_continue);
-            TokenKind::Id
+            LowTokenKind::Id
         }
 
         c if is_integer_start(c) => {
             cursor.consume_while(is_integer_continue);
-            TokenKind::LitInteger
+            LowTokenKind::LitInteger
         }
 
-        '.' => TokenKind::Dot,
-        ',' => TokenKind::Comma,
-        ';' => TokenKind::Semicolon,
-        ':' => TokenKind::Colon,
-        '(' => TokenKind::ParenOpen,
-        ')' => TokenKind::ParenClose,
-        '{' => TokenKind::BraceOpen,
-        '}' => TokenKind::BraceClose,
-        '[' => TokenKind::BracketOpen,
-        ']' => TokenKind::BracketClose,
-        '@' => TokenKind::At,
-        '!' => TokenKind::Bang,
+        '.' => LowTokenKind::Dot,
+        ',' => LowTokenKind::Comma,
+        ';' => LowTokenKind::Semicolon,
+        ':' => LowTokenKind::Colon,
+        '(' => LowTokenKind::ParenOpen,
+        ')' => LowTokenKind::ParenClose,
+        '{' => LowTokenKind::BraceOpen,
+        '}' => LowTokenKind::BraceClose,
+        '[' => LowTokenKind::BracketOpen,
+        ']' => LowTokenKind::BracketClose,
+        '@' => LowTokenKind::At,
+        '!' => LowTokenKind::Bang,
 
-        '=' => TokenKind::Assign,
+        '=' => LowTokenKind::Assign,
 
-        '+' => TokenKind::Add,
-        '-' => TokenKind::Sub,
-        '*' => TokenKind::Mul,
-        '/' => TokenKind::Div,
-        '%' => TokenKind::Mod,
+        '+' => LowTokenKind::Add,
+        '-' => LowTokenKind::Sub,
+        '*' => LowTokenKind::Mul,
+        '/' => LowTokenKind::Div,
+        '%' => LowTokenKind::Mod,
 
-        '~' => TokenKind::BitwiseNot,
-        '^' => TokenKind::BitwiseXor,
-        '&' => TokenKind::BitwiseAnd,
-        '|' => TokenKind::BitwiseOr,
+        '~' => LowTokenKind::BitwiseNot,
+        '^' => LowTokenKind::BitwiseXor,
+        '&' => LowTokenKind::BitwiseAnd,
+        '|' => LowTokenKind::BitwiseOr,
 
-        '<' => TokenKind::Lt,
-        '>' => TokenKind::Gt,
+        '<' => LowTokenKind::Lt,
+        '>' => LowTokenKind::Gt,
 
-        _ => TokenKind::Unknown,
+        _ => LowTokenKind::Unknown,
     };
 
     let consumed = cursor.len_consumed();
@@ -152,44 +154,279 @@ fn is_integer_continue(cursor: &Cursor) -> bool {
 mod tests {
     use super::*;
 
-    fn match_tokens(s: &str, expected: &[LowToken]) {
-        let tokens = low_token_iter(s).collect::<Vec<_>>();
+    fn assert_tokens(input: &str, expected: &[(LowTokenKind, u32)]) {
+        let mut expected_tokens = expected
+            .iter()
+            .copied()
+            .map(|(kind, len)| LowToken { kind, len })
+            .collect::<Vec<_>>();
+        expected_tokens.push(LowToken {
+            kind: LowTokenKind::Eof,
+            len: 0,
+        });
 
-        assert_eq!(tokens.len(), expected.len());
-
-        for (i, token) in tokens.iter().enumerate() {
-            assert_eq!(token, &expected[i]);
-        }
+        let tokens = low_token_iter(input).collect::<Vec<_>>();
+        assert_eq!(tokens, expected_tokens, "input: {input:?}");
     }
 
-    fn match_kinds(s: &str, expected: &[TokenKind]) {
-        let kinds = low_token_iter(s)
+    fn assert_kinds(input: &str, expected: &[LowTokenKind]) {
+        let mut expected_kinds = expected.to_vec();
+        expected_kinds.push(LowTokenKind::Eof);
+
+        let kinds = low_token_iter(input)
             .map(|token| token.kind)
             .collect::<Vec<_>>();
+        assert_eq!(kinds, expected_kinds, "input: {input:?}");
+    }
 
-        assert_eq!(kinds.len(), expected.len());
+    fn assert_len_sum_matches_input(input: &str) {
+        let tokens = low_token_iter(input).collect::<Vec<_>>();
+        let len_sum = tokens.iter().map(|token| token.len).sum::<u32>();
+        assert_eq!(len_sum, input.len() as u32, "input: {input:?}");
+        assert_eq!(
+            tokens.last().map(|token| token.kind),
+            Some(LowTokenKind::Eof)
+        );
+        assert_eq!(tokens.last().map(|token| token.len), Some(0));
 
-        for (i, kind) in kinds.iter().enumerate() {
-            assert_eq!(kind, &expected[i]);
+        let mut index = 0usize;
+        for token in tokens {
+            let next = index + token.len as usize;
+            assert!(next <= input.len(), "input: {input:?}");
+            assert!(input.is_char_boundary(index), "input: {input:?}");
+            assert!(input.is_char_boundary(next), "input: {input:?}");
+
+            if token.kind != LowTokenKind::Eof {
+                let _ = &input[index..next];
+            }
+
+            index = next;
         }
+
+        assert_eq!(index, input.len(), "input: {input:?}");
     }
 
     #[test]
     fn test_empty_input() {
-        match_tokens(
-            "",
-            &[LowToken {
-                kind: TokenKind::Eof,
-                len: 0,
-            }],
+        assert_tokens("", &[]);
+    }
+
+    #[test]
+    fn test_whitespace_tokens() {
+        assert_tokens(" ", &[(LowTokenKind::Whitespace, 1)]);
+        assert_tokens("\t\n", &[(LowTokenKind::Whitespace, 2)]);
+        assert_tokens("\r\n \t", &[(LowTokenKind::Whitespace, 4)]);
+        assert_tokens(
+            "  abc",
+            &[(LowTokenKind::Whitespace, 2), (LowTokenKind::Id, 3)],
         );
     }
 
     #[test]
-    fn test_len_sum_is_equal_to_input_len() {
-        let s = "Hello, world! This is a test. 1 + 1 = 2!";
-        let tokens = low_token_iter(s).collect::<Vec<_>>();
-        let len_sum = tokens.iter().map(|token| token.len).sum::<u32>();
-        assert_eq!(len_sum, s.len() as u32);
+    fn test_comment_tokens() {
+        assert_tokens("#", &[(LowTokenKind::Comment, 1)]);
+        assert_tokens(
+            "# hello",
+            &[(LowTokenKind::Comment, "# hello".len() as u32)],
+        );
+        assert_tokens(
+            "# hello\n",
+            &[
+                (LowTokenKind::Comment, "# hello".len() as u32),
+                (LowTokenKind::Whitespace, "\n".len() as u32),
+            ],
+        );
+        assert_tokens(
+            "# hello\r\nx",
+            &[
+                (LowTokenKind::Comment, "# hello\r".len() as u32),
+                (LowTokenKind::Whitespace, "\n".len() as u32),
+                (LowTokenKind::Id, 1),
+            ],
+        );
+    }
+
+    #[test]
+    fn test_doc_comment_tokens() {
+        assert_tokens("#//#", &[(LowTokenKind::DocComment, "#//#".len() as u32)]);
+        assert_tokens(
+            "#/hello/#",
+            &[(LowTokenKind::DocComment, "#/hello/#".len() as u32)],
+        );
+        assert_tokens(
+            "#/hello\nworld/#",
+            &[(LowTokenKind::DocComment, "#/hello\nworld/#".len() as u32)],
+        );
+        assert_tokens(
+            "#/a/#b",
+            &[
+                (LowTokenKind::DocComment, "#/a/#".len() as u32),
+                (LowTokenKind::Id, 1),
+            ],
+        );
+    }
+
+    #[test]
+    fn test_unterminated_doc_comment_tokens() {
+        assert_tokens(
+            "#/",
+            &[(LowTokenKind::UnterminatedDocComment, "#/".len() as u32)],
+        );
+        assert_tokens(
+            "#/abc",
+            &[(LowTokenKind::UnterminatedDocComment, "#/abc".len() as u32)],
+        );
+        assert_tokens(
+            "#/abc\n",
+            &[(LowTokenKind::UnterminatedDocComment, "#/abc\n".len() as u32)],
+        );
+        assert_tokens(
+            "#//",
+            &[(LowTokenKind::UnterminatedDocComment, "#//".len() as u32)],
+        );
+    }
+
+    #[test]
+    fn test_id_tokens_ascii_and_unicode() {
+        assert_tokens("abc", &[(LowTokenKind::Id, 3)]);
+        assert_tokens("_abc123", &[(LowTokenKind::Id, 7)]);
+        assert_tokens(
+            "abc-1",
+            &[
+                (LowTokenKind::Id, 3),
+                (LowTokenKind::Sub, 1),
+                (LowTokenKind::LitInteger, 1),
+            ],
+        );
+
+        assert!(UnicodeXID::is_xid_start('Δ'));
+        assert_tokens("Δx", &[(LowTokenKind::Id, "Δx".len() as u32)]);
+
+        assert_tokens(
+            "x🙂",
+            &[
+                (LowTokenKind::Id, 1),
+                (LowTokenKind::Unknown, "🙂".len() as u32),
+            ],
+        );
+    }
+
+    #[test]
+    fn test_integer_tokens() {
+        assert_tokens("0", &[(LowTokenKind::LitInteger, 1)]);
+        assert_tokens("1234567890", &[(LowTokenKind::LitInteger, 10)]);
+        assert_tokens(
+            "42abc",
+            &[(LowTokenKind::LitInteger, 2), (LowTokenKind::Id, 3)],
+        );
+        assert_tokens(
+            "1_2",
+            &[(LowTokenKind::LitInteger, 1), (LowTokenKind::Id, 2)],
+        );
+    }
+
+    #[test]
+    fn test_punctuation_and_operator_tokens() {
+        let cases = [
+            (".", LowTokenKind::Dot),
+            (",", LowTokenKind::Comma),
+            (";", LowTokenKind::Semicolon),
+            (":", LowTokenKind::Colon),
+            ("(", LowTokenKind::ParenOpen),
+            (")", LowTokenKind::ParenClose),
+            ("{", LowTokenKind::BraceOpen),
+            ("}", LowTokenKind::BraceClose),
+            ("[", LowTokenKind::BracketOpen),
+            ("]", LowTokenKind::BracketClose),
+            ("@", LowTokenKind::At),
+            ("!", LowTokenKind::Bang),
+            ("=", LowTokenKind::Assign),
+            ("+", LowTokenKind::Add),
+            ("-", LowTokenKind::Sub),
+            ("*", LowTokenKind::Mul),
+            ("/", LowTokenKind::Div),
+            ("%", LowTokenKind::Mod),
+            ("~", LowTokenKind::BitwiseNot),
+            ("^", LowTokenKind::BitwiseXor),
+            ("&", LowTokenKind::BitwiseAnd),
+            ("|", LowTokenKind::BitwiseOr),
+            ("<", LowTokenKind::Lt),
+            (">", LowTokenKind::Gt),
+        ];
+
+        for (input, kind) in cases {
+            assert_tokens(input, &[(kind, 1)]);
+        }
+    }
+
+    #[test]
+    fn test_unknown_tokens_ascii_and_unicode() {
+        assert_tokens("$", &[(LowTokenKind::Unknown, 1)]);
+        assert_tokens("`", &[(LowTokenKind::Unknown, 1)]);
+
+        for c in ['€', '🙂'] {
+            let expected_kind = if c == '_' || UnicodeXID::is_xid_start(c) {
+                LowTokenKind::Id
+            } else {
+                LowTokenKind::Unknown
+            };
+
+            let input = c.to_string();
+            assert_kinds(&input, &[expected_kind]);
+        }
+    }
+
+    #[test]
+    fn test_compound_operators_are_split_currently() {
+        assert_kinds(
+            "-> == += <<= >>= && || ^=",
+            &[
+                LowTokenKind::Sub,
+                LowTokenKind::Gt,
+                LowTokenKind::Whitespace,
+                LowTokenKind::Assign,
+                LowTokenKind::Assign,
+                LowTokenKind::Whitespace,
+                LowTokenKind::Add,
+                LowTokenKind::Assign,
+                LowTokenKind::Whitespace,
+                LowTokenKind::Lt,
+                LowTokenKind::Lt,
+                LowTokenKind::Assign,
+                LowTokenKind::Whitespace,
+                LowTokenKind::Gt,
+                LowTokenKind::Gt,
+                LowTokenKind::Assign,
+                LowTokenKind::Whitespace,
+                LowTokenKind::BitwiseAnd,
+                LowTokenKind::BitwiseAnd,
+                LowTokenKind::Whitespace,
+                LowTokenKind::BitwiseOr,
+                LowTokenKind::BitwiseOr,
+                LowTokenKind::Whitespace,
+                LowTokenKind::BitwiseXor,
+                LowTokenKind::Assign,
+            ],
+        );
+    }
+
+    #[test]
+    fn test_length_and_eof_invariants() {
+        let cases = [
+            "",
+            "abc",
+            " \t\r\n",
+            "# hello\nworld",
+            "#/doc/#",
+            "#/unterminated",
+            "a+b*(c-2)",
+            "Δx = 42",
+            "🙂 + €",
+            "#/line 1\nline 2/#tail",
+        ];
+
+        for input in cases {
+            assert_len_sum_matches_input(input);
+        }
     }
 }

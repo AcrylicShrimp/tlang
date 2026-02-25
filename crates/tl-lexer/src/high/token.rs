@@ -1,17 +1,23 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum TokenKind {
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Token {
     // common
     Eof,
     Unknown,
     Whitespace,
-    Comment,
-    DocComment,
+    Comment(TokenComment),
 
     // keywords
-    Id,
+    Id(String),
 
     // literals
-    LitInteger,
+    LitBool {
+        content: String,
+    },
+    LitInteger {
+        prefix: Option<String>,
+        content: String,
+        suffix: Option<String>,
+    },
 
     // punctuations - common
     Dot,
@@ -25,7 +31,6 @@ pub enum TokenKind {
     BracketOpen,
     BracketClose,
     At,
-    Bang,
 
     // punc - compound
     Arrow,
@@ -73,4 +78,15 @@ pub enum TokenKind {
     LogicalXor,
     LogicalAnd,
     LogicalOr,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum TokenComment {
+    Line {
+        content: String,
+    },
+    Doc {
+        content: String,
+        is_terminated: bool,
+    },
 }
