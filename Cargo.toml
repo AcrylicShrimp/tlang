@@ -4,3 +4,4 @@ members = ["crates/*"]
 
 [workspace.dependencies]
 tl-span = { path = "crates/tl-span" }
+unicode-xid = { version = "0.2" }

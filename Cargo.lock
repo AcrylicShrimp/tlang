@@ -3,5 +3,18 @@
 version = 4
 
 [[package]]
+name = "tl-lexer"
+version = "0.1.0"
+dependencies = [
+ "unicode-xid",
+]
+
+[[package]]
 name = "tl-span"
 version = "0.1.0"
+
+[[package]]
+name = "unicode-xid"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"

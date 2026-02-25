@@ -17,9 +17,9 @@ use core as my_core;
 
 # some python-style comments!
 
-###
+#/
 This function does nothing, just for demonstrating doc-comments.
-###
+/#
 fn test_fn() -> void {
 
 }
@@ -125,17 +125,17 @@ fn make_my_struct_with_ref() -> MyStructWithRef {
     let a = true;
 
     return MyStructWithRef {
-        b: ref a, // may cause dangling pointer, but whatever. this is fine.
+        b: ref a, # may cause dangling pointer, but whatever. this is fine.
     };
 
     return MyStructWithRef {
-        b: ref true, // this will cause a compile error; ref keyword must be used to l-value expression.
+        b: ref true, # this will cause a compile error; ref keyword must be used to l-value expression.
     };
 }
 
 fn access_my_struct_with_ref(s: ref MyStructWithRef) -> void {
-    printf("b: %b\n", s.b); // accessing a reference directly will automatically dereference it.
-    printf("b: %p\n", ref s.b); // to get the address of the reference, you need to use the ref keyword.
+    printf("b: %b\n", s.b); # accessing a reference directly will automatically dereference it.
+    printf("b: %p\n", ref s.b); # to get the address of the reference, you need to use the ref keyword.
 }
 
 # how about array types?
