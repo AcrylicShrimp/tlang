@@ -46,7 +46,7 @@ fn next(s: impl AsRef<str>) -> LowToken {
                 cursor.consume();
                 LowTokenKind::DocComment
             } else {
-                LowTokenKind::UnterminatedDocComment
+                LowTokenKind::DocCommentUnterminated
             }
         }
 
@@ -60,10 +60,9 @@ fn next(s: impl AsRef<str>) -> LowToken {
             LowTokenKind::Id
         }
 
-        c if is_integer_start(c) => {
-            cursor.consume_while(is_integer_continue);
-            LowTokenKind::LitInteger
-        }
+        c if is_integer_start(c) => read_numeric(&mut cursor),
+
+        '"' => read_string(&mut cursor),
 
         '.' => LowTokenKind::Dot,
         ',' => LowTokenKind::Comma,
@@ -146,8 +145,52 @@ fn is_integer_start(c: char) -> bool {
     c.is_ascii_digit()
 }
 
-fn is_integer_continue(cursor: &Cursor) -> bool {
-    cursor.at(0).is_ascii_digit()
+fn read_numeric(cursor: &mut Cursor) -> LowTokenKind {
+    cursor.consume_while(|cursor| cursor.at(0).is_ascii_digit());
+
+    let mut has_dot = false;
+    let mut has_exponent = false;
+
+    if cursor.at(0) == '.' {
+        has_dot = true;
+        cursor.consume();
+        cursor.consume_while(|cursor| cursor.at(0).is_ascii_digit());
+    }
+
+    if (cursor.at(0) == 'e' || cursor.at(0) == 'E')
+        && (cursor.at(1) == '+' || cursor.at(1) == '-' || cursor.at(1).is_ascii_digit())
+    {
+        has_exponent = true;
+        cursor.consume();
+        cursor.consume();
+        cursor.consume_while(|cursor| cursor.at(0).is_ascii_digit());
+    }
+
+    if has_dot || has_exponent {
+        LowTokenKind::LitFloat
+    } else {
+        LowTokenKind::LitInteger
+    }
+}
+
+fn read_string(cursor: &mut Cursor) -> LowTokenKind {
+    while !cursor.is_empty() {
+        match cursor.at(0) {
+            '"' => {
+                cursor.consume();
+                return LowTokenKind::LitString;
+            }
+            '\\' => {
+                cursor.consume();
+                cursor.consume();
+            }
+            _ => {
+                cursor.consume();
+            }
+        }
+    }
+
+    LowTokenKind::LitStringUnterminated
 }
 
 #[cfg(test)]
@@ -270,19 +313,19 @@ mod tests {
     fn test_unterminated_doc_comment_tokens() {
         assert_tokens(
             "#/",
-            &[(LowTokenKind::UnterminatedDocComment, "#/".len() as u32)],
+            &[(LowTokenKind::DocCommentUnterminated, "#/".len() as u32)],
         );
         assert_tokens(
             "#/abc",
-            &[(LowTokenKind::UnterminatedDocComment, "#/abc".len() as u32)],
+            &[(LowTokenKind::DocCommentUnterminated, "#/abc".len() as u32)],
         );
         assert_tokens(
             "#/abc\n",
-            &[(LowTokenKind::UnterminatedDocComment, "#/abc\n".len() as u32)],
+            &[(LowTokenKind::DocCommentUnterminated, "#/abc\n".len() as u32)],
         );
         assert_tokens(
             "#//",
-            &[(LowTokenKind::UnterminatedDocComment, "#//".len() as u32)],
+            &[(LowTokenKind::DocCommentUnterminated, "#//".len() as u32)],
         );
     }
 
@@ -322,6 +365,57 @@ mod tests {
         assert_tokens(
             "1_2",
             &[(LowTokenKind::LitInteger, 1), (LowTokenKind::Id, 2)],
+        );
+    }
+
+    #[test]
+    fn test_float_tokens() {
+        assert_tokens("1.0", &[(LowTokenKind::LitFloat, "1.0".len() as u32)]);
+        assert_tokens("1.", &[(LowTokenKind::LitFloat, "1.".len() as u32)]);
+        assert_tokens("1e2", &[(LowTokenKind::LitFloat, "1e2".len() as u32)]);
+        assert_tokens("42e-10", &[(LowTokenKind::LitFloat, "42e-10".len() as u32)]);
+        assert_tokens(
+            "6.02e23",
+            &[(LowTokenKind::LitFloat, "6.02e23".len() as u32)],
+        );
+        assert_tokens("7.e-1", &[(LowTokenKind::LitFloat, "7.e-1".len() as u32)]);
+        assert_tokens(
+            "1e",
+            &[(LowTokenKind::LitInteger, 1), (LowTokenKind::Id, 1)],
+        );
+        assert_tokens(
+            "1..2",
+            &[
+                (LowTokenKind::LitFloat, "1.".len() as u32),
+                (LowTokenKind::Dot, 1),
+                (LowTokenKind::LitInteger, 1),
+            ],
+        );
+    }
+
+    #[test]
+    fn test_string_tokens() {
+        assert_tokens(
+            "\"hello\"",
+            &[(LowTokenKind::LitString, "\"hello\"".len() as u32)],
+        );
+        assert_tokens(
+            "\"a\\\"b\"",
+            &[(LowTokenKind::LitString, "\"a\\\"b\"".len() as u32)],
+        );
+        assert_tokens(
+            "\"unterminated",
+            &[(
+                LowTokenKind::LitStringUnterminated,
+                "\"unterminated".len() as u32,
+            )],
+        );
+        assert_tokens(
+            "\"hi\"id",
+            &[
+                (LowTokenKind::LitString, "\"hi\"".len() as u32),
+                (LowTokenKind::Id, 2),
+            ],
         );
     }
 

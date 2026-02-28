@@ -3,5 +3,6 @@ resolver = "3"
 members = ["crates/*"]
 
 [workspace.dependencies]
+tl-lexer = { path = "crates/tl-lexer" }
 tl-span = { path = "crates/tl-span" }
 unicode-xid = { version = "0.2" }

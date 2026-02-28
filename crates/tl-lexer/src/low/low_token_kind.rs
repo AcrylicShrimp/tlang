@@ -6,13 +6,16 @@ pub enum LowTokenKind {
     Whitespace,
     Comment,
     DocComment,
-    UnterminatedDocComment,
+    DocCommentUnterminated,
 
     // keywords
     Id,
 
     // literals
     LitInteger,
+    LitFloat,
+    LitString,
+    LitStringUnterminated,
 
     // punctuations - common
     Dot,
