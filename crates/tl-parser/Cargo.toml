@@ -1,0 +1,9 @@
+[package]
+name = "tl-parser"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tl-diagnostic = { workspace = true }
+tl-lexer = { workspace = true }
+tl-span = { workspace = true }

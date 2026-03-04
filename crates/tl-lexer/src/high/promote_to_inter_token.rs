@@ -44,6 +44,8 @@ pub fn promote_to_inter_token(source: &Source, offset: BytePos, token: LowToken)
 
             match content.as_str() {
                 "true" | "false" => InterTokenKind::LitBool { content },
+                "use" => InterTokenKind::KwUse,
+                "as" => InterTokenKind::KwAs,
                 "not" => InterTokenKind::LogicalNot,
                 "and" => InterTokenKind::LogicalAnd,
                 "or" => InterTokenKind::LogicalOr,

@@ -1,0 +1,169 @@
+use crate::{
+    ast::*,
+    cursor::{Cursor, TokenType},
+};
+use tl_diagnostic::DiagnosticItem;
+use tl_lexer::Token;
+use tl_span::Span;
+
+pub struct Parser<I>
+where
+    I: Iterator<Item = Token>,
+{
+    cursor: Cursor<I>,
+    diagnostics: Vec<DiagnosticItem>,
+}
+
+impl<I> Parser<I>
+where
+    I: Iterator<Item = Token>,
+{
+    pub fn new(cursor: Cursor<I>) -> Self {
+        Self {
+            cursor,
+            diagnostics: vec![],
+        }
+    }
+
+    pub fn span_range(&self, from_span: Span) -> Span {
+        Span::union(from_span, self.cursor.last_span())
+    }
+}
+
+impl<I> Parser<I>
+where
+    I: Iterator<Item = Token>,
+{
+    pub fn parse_module(&mut self) -> Option<AstModule> {
+        let span = self.cursor.span();
+
+        let mut items = vec![];
+
+        while !self.cursor.is_eof() {
+            if let Some(item) = self.parse_top_level_item() {
+                items.push(item);
+            }
+        }
+
+        Some(AstModule {
+            span: self.span_range(span),
+            items,
+        })
+    }
+
+    pub fn parse_top_level_item(&mut self) -> Option<AstTopLevelItem> {
+        let span = self.cursor.span();
+
+        let kind = if self.cursor.first().is(TokenType::KwUse) {
+            AstTopLevelItemKind::Use(self.parse_use()?)
+        } else {
+            self.diagnostics
+                .push(self.cursor.make_unexpected_token_err());
+            self.cursor.discard();
+            return None;
+        };
+
+        Some(AstTopLevelItem {
+            span: self.span_range(span),
+            kind,
+        })
+    }
+
+    pub fn parse_use(&mut self) -> Option<AstUse> {
+        let span = self.cursor.span();
+
+        let kw_use = self.cursor.first().fixed()?;
+        let path = self.parse_path()?;
+        let tail =
+            if self.cursor.first().is(TokenType::Dot) || self.cursor.first().is(TokenType::KwAs) {
+                Some(self.parse_use_tail()?)
+            } else {
+                None
+            };
+        let semicolon = self.cursor.first().fixed()?;
+
+        Some(AstUse {
+            span: self.span_range(span),
+            kw_use,
+            path,
+            tail,
+            semicolon,
+        })
+    }
+
+    pub fn parse_path(&mut self) -> Option<AstPath> {
+        let span = self.cursor.span();
+
+        let segment = self.cursor.first().id()?;
+        let mut extends = Vec::new();
+
+        while self.cursor.first().is(TokenType::Dot) && self.cursor.second().is(TokenType::Id) {
+            extends.push(self.parse_path_extend()?);
+        }
+
+        Some(AstPath {
+            span: self.span_range(span),
+            segment,
+            extends,
+        })
+    }
+
+    pub fn parse_path_extend(&mut self) -> Option<AstPathExtend> {
+        let span = self.cursor.span();
+
+        let dot = self.cursor.first().fixed()?;
+        let name = self.cursor.first().id()?;
+
+        Some(AstPathExtend {
+            span: self.span_range(span),
+            dot,
+            name,
+        })
+    }
+
+    pub fn parse_use_tail(&mut self) -> Option<AstUseTail> {
+        let span = self.cursor.span();
+
+        let kind = if self.cursor.first().is(TokenType::KwAs) {
+            AstUseTailKind::As(self.parse_use_tail_as()?)
+        } else if self.cursor.first().is(TokenType::Dot) {
+            AstUseTailKind::All(self.parse_use_tail_all()?)
+        } else {
+            self.diagnostics
+                .push(self.cursor.make_unexpected_token_err());
+            self.cursor.discard();
+            return None;
+        };
+
+        Some(AstUseTail {
+            span: self.span_range(span),
+            kind,
+        })
+    }
+
+    pub fn parse_use_tail_as(&mut self) -> Option<AstUseTailAs> {
+        let span = self.cursor.span();
+
+        let kw_as = self.cursor.first().fixed()?;
+        let name = self.cursor.first().id()?;
+
+        Some(AstUseTailAs {
+            span: self.span_range(span),
+            kw_as,
+            name,
+        })
+    }
+
+    pub fn parse_use_tail_all(&mut self) -> Option<AstUseTailAll> {
+        let span = self.cursor.span();
+
+        let dot = self.cursor.first().fixed()?;
+        let star = self.cursor.first().fixed()?;
+
+        Some(AstUseTailAll {
+            span: self.span_range(span),
+            dot,
+            star,
+        })
+    }
+}

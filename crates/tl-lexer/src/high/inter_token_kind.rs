@@ -8,6 +8,8 @@ pub enum InterTokenKind {
 
     // keywords
     Id(String),
+    KwUse,
+    KwAs,
 
     // literals
     LitBool {

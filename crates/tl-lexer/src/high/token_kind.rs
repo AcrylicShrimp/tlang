@@ -8,6 +8,8 @@ pub enum TokenKind {
 
     // keywords
     Id(String),
+    KwUse,
+    KwAs,
 
     // literals
     LitBool {

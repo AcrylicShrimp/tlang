@@ -7,7 +7,7 @@ pub struct Span {
 }
 
 impl Span {
-    pub fn new(lo: BytePos, hi: BytePos) -> Self {
+    pub const fn new(lo: BytePos, hi: BytePos) -> Self {
         Self { lo, hi }
     }
 

@@ -25,6 +25,8 @@ pub fn promote_to_token(token: InterToken) -> Token {
             }),
         },
         From::Id(id) => To::Id(id),
+        From::KwUse => To::KwUse,
+        From::KwAs => To::KwAs,
         From::LitBool { content } => To::LitBool { content },
         From::LitInteger { content, suffix } => To::LitInteger { content, suffix },
         From::LitFloat { content, suffix } => To::LitFloat { content, suffix },

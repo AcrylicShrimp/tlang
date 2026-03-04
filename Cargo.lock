@@ -3,11 +3,27 @@
 version = 4
 
 [[package]]
+name = "tl-diagnostic"
+version = "0.1.0"
+dependencies = [
+ "tl-span",
+]
+
+[[package]]
 name = "tl-lexer"
 version = "0.1.0"
 dependencies = [
  "tl-span",
  "unicode-xid",
+]
+
+[[package]]
+name = "tl-parser"
+version = "0.1.0"
+dependencies = [
+ "tl-diagnostic",
+ "tl-lexer",
+ "tl-span",
 ]
 
 [[package]]
