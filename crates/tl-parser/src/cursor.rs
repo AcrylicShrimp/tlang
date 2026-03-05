@@ -94,6 +94,8 @@ where
             }
 
             fn consume(&mut self) -> Option<Token> {
+                self.expected_token_set.clear();
+
                 let token = self.lookahead.next()?;
                 *self.last_span = token.span;
                 Some(token)

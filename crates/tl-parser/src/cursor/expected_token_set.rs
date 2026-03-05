@@ -13,6 +13,10 @@ impl ExpectedTokenSet {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.tokens.clear();
+    }
+
     pub fn add(&mut self, token: TokenType) {
         self.tokens.insert(token);
     }
