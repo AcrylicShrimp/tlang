@@ -3,6 +3,16 @@
 version = 4
 
 [[package]]
+name = "tl-compiler"
+version = "0.1.0"
+dependencies = [
+ "tl-diagnostic",
+ "tl-lexer",
+ "tl-parser",
+ "tl-span",
+]
+
+[[package]]
 name = "tl-diagnostic"
 version = "0.1.0"
 dependencies = [

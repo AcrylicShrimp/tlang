@@ -3,6 +3,7 @@ resolver = "3"
 members = ["crates/*"]
 
 [workspace.dependencies]
+tl-compiler = { path = "crates/tl-compiler" }
 tl-diagnostic = { path = "crates/tl-diagnostic" }
 tl-lexer = { path = "crates/tl-lexer" }
 tl-parser = { path = "crates/tl-parser" }

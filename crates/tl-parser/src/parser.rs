@@ -38,7 +38,7 @@ impl<I> Parser<I>
 where
     I: Iterator<Item = Token>,
 {
-    pub fn parse_module(&mut self) -> Option<AstModule> {
+    pub fn parse_module(&mut self) -> AstModule {
         let span = self.cursor.span();
 
         let mut items = vec![];
@@ -49,10 +49,10 @@ where
             }
         }
 
-        Some(AstModule {
+        AstModule {
             span: self.span_range(span),
             items,
-        })
+        }
     }
 
     pub fn parse_top_level_item(&mut self) -> Option<AstTopLevelItem> {
