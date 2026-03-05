@@ -22,17 +22,14 @@ impl ExpectedTokenSet {
     }
 
     pub fn into_expected_list_str(self) -> String {
-        let mut expected_list = self
+        let expected_list = self
             .tokens
             .iter()
             .map(|token| token.as_str())
             .collect::<Vec<_>>();
 
-        if expected_list.is_empty() {
-            expected_list.push(TokenType::Eof.as_str());
-        }
-
         match expected_list.split_last() {
+            Some((last, &[])) => (*last).to_owned(),
             Some((last, rest)) => {
                 let rest_part = rest
                     .iter()
@@ -42,7 +39,7 @@ impl ExpectedTokenSet {
 
                 format!("{rest_part} or {last}")
             }
-            None => expected_list[0].to_owned(),
+            None => TokenType::Eof.as_str().to_owned(),
         }
     }
 }
