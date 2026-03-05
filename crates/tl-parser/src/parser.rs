@@ -28,6 +28,10 @@ where
     pub fn span_range(&self, from_span: Span) -> Span {
         Span::union(from_span, self.cursor.last_span())
     }
+
+    pub fn into_diagnostics(self) -> Vec<DiagnosticItem> {
+        self.diagnostics
+    }
 }
 
 impl<I> Parser<I>

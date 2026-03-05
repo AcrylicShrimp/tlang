@@ -46,10 +46,7 @@ where
 
     pub fn discard(&mut self) -> Option<Token> {
         self.expected_token_set.clear();
-
-        let token = self.lookahead.next();
-        self.last_span = self.span();
-        token
+        self.lookahead.next()
     }
 
     pub fn span(&self) -> Span {
