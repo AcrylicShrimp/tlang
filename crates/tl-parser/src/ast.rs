@@ -1,8 +1,13 @@
-use self::common::AstId;
-use crate::{fixed::keywords::*, fixed::operators::*, fixed::punctuations::*};
+use crate::{
+    fixed::{keywords::*, operators::*, punctuations::*},
+    primitive::*,
+    utils::*,
+};
 use tl_span::Span;
 
-pub mod common {
+pub mod primitive {
+    use super::utils::PunctuatedNoTrailing;
+    use crate::punctuations::*;
     use tl_span::{BytePos, Span};
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -19,6 +24,33 @@ pub mod common {
         pub fn span(&self) -> Span {
             Span::new(self.lo, self.lo + BytePos::new(self.name.len() as u32))
         }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    pub struct AstTypeName {
+        pub span: Span,
+        pub id: AstId,
+    }
+
+    pub type AstPath = PunctuatedNoTrailing<AstId, PuncDot>;
+}
+
+pub mod utils {
+    use tl_span::Span;
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    pub struct Punctuated<T, P> {
+        pub span: Span,
+        pub first: T,
+        pub rest: Vec<(P, T)>,
+        pub trailing: Option<P>,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    pub struct PunctuatedNoTrailing<T, P> {
+        pub span: Span,
+        pub first: T,
+        pub rest: Vec<(P, T)>,
     }
 }
 
@@ -37,6 +69,7 @@ pub struct AstTopLevelItem {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AstTopLevelItemKind {
     Use(AstUse),
+    ExposeRefFn(AstExposeRefFn),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -46,20 +79,6 @@ pub struct AstUse {
     pub path: AstPath,
     pub tail: Option<AstUseTail>,
     pub semicolon: PuncSemicolon,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AstPath {
-    pub span: Span,
-    pub segment: AstId,
-    pub extends: Vec<AstPathExtend>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AstPathExtend {
-    pub span: Span,
-    pub dot: PuncDot,
-    pub name: AstId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -86,4 +105,27 @@ pub struct AstUseTailAll {
     pub span: Span,
     pub dot: PuncDot,
     pub star: OpMul,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct AstExposeRefFn {
+    pub span: Span,
+    pub kw_expose: KwExpose,
+    pub kw_ref: KwRef,
+    pub kw_fn: KwFn,
+    pub name: AstId,
+    pub paren_open: PuncParenOpen,
+    pub params: Option<Punctuated<AstFnParam, PuncComma>>,
+    pub paren_close: PuncParenClose,
+    pub arrow: PuncArrow,
+    pub return_ty: AstTypeName,
+    pub semicolon: PuncSemicolon,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct AstFnParam {
+    pub span: Span,
+    pub id: AstId,
+    pub colon: PuncColon,
+    pub ty: AstTypeName,
 }

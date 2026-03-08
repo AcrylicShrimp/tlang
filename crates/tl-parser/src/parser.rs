@@ -1,6 +1,7 @@
 use crate::{
     ast::*,
     cursor::{Cursor, TokenType},
+    primitive::*,
 };
 use tl_diagnostic::DiagnosticItem;
 use tl_lexer::Token;
@@ -98,30 +99,19 @@ where
     pub fn parse_path(&mut self) -> Option<AstPath> {
         let span = self.cursor.span();
 
-        let segment = self.parse_id()?;
-        let mut extends = Vec::new();
+        let first = self.parse_id()?;
+        let mut rest = Vec::new();
 
         while self.cursor.first().is(TokenType::Dot) && self.cursor.second().is(TokenType::Id) {
-            extends.push(self.parse_path_extend()?);
+            let dot = self.parse_fixed()?;
+            let name = self.parse_id()?;
+            rest.push((dot, name));
         }
 
         Some(AstPath {
             span: self.span_range(span),
-            segment,
-            extends,
-        })
-    }
-
-    pub fn parse_path_extend(&mut self) -> Option<AstPathExtend> {
-        let span = self.cursor.span();
-
-        let dot = self.parse_fixed()?;
-        let name = self.parse_id()?;
-
-        Some(AstPathExtend {
-            span: self.span_range(span),
-            dot,
-            name,
+            first,
+            rest,
         })
     }
 

@@ -43,6 +43,10 @@ pub mod keywords {
 
     define_fixed!(KwUse, 3, TokenType::KwUse);
     define_fixed!(KwAs, 2, TokenType::KwAs);
+    define_fixed!(KwExpose, 6, TokenType::KwExpose);
+    define_fixed!(KwRef, 3, TokenType::KwRef);
+    define_fixed!(KwFn, 2, TokenType::KwFn);
+    define_fixed!(KwVoid, 4, TokenType::KwVoid);
 }
 
 pub mod punctuations {

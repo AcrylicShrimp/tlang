@@ -22,11 +22,12 @@ fn test_use_simple_path() {
     let item = &module.items[0];
     let use_item = match &item.kind {
         AstTopLevelItemKind::Use(use_item) => use_item,
+        AstTopLevelItemKind::ExposeRefFn(_) => panic!("expected use item"),
     };
 
-    assert_eq!(use_item.path.segment.name, "core");
-    assert_eq!(use_item.path.extends.len(), 1);
-    assert_eq!(use_item.path.extends[0].name.name, "printf");
+    assert_eq!(use_item.path.first.name, "core");
+    assert_eq!(use_item.path.rest.len(), 1);
+    assert_eq!(use_item.path.rest[0].1.name, "printf");
     assert!(use_item.tail.is_none());
 }
 
@@ -41,10 +42,11 @@ fn test_use_alias() {
     let item = &module.items[0];
     let use_item = match &item.kind {
         AstTopLevelItemKind::Use(use_item) => use_item,
+        AstTopLevelItemKind::ExposeRefFn(_) => panic!("expected use item"),
     };
 
-    assert_eq!(use_item.path.segment.name, "core");
-    assert!(use_item.path.extends.is_empty());
+    assert_eq!(use_item.path.first.name, "core");
+    assert!(use_item.path.rest.is_empty());
 
     let tail = use_item.tail.as_ref().expect("expected alias tail");
     match &tail.kind {
@@ -64,6 +66,7 @@ fn test_use_wildcard() {
     let item = &module.items[0];
     let use_item = match &item.kind {
         AstTopLevelItemKind::Use(use_item) => use_item,
+        AstTopLevelItemKind::ExposeRefFn(_) => panic!("expected use item"),
     };
 
     let tail = use_item.tail.as_ref().expect("expected wildcard tail");

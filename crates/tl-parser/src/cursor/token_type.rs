@@ -12,6 +12,10 @@ pub enum TokenType {
     Id,
     KwUse,
     KwAs,
+    KwExpose,
+    KwRef,
+    KwFn,
+    KwVoid,
 
     // literals
     LitBool,
@@ -152,6 +156,10 @@ impl TokenType {
             TokenType::Id => "an identifier",
             TokenType::KwUse => "`use`",
             TokenType::KwAs => "`as`",
+            TokenType::KwExpose => "`expose`",
+            TokenType::KwRef => "`ref`",
+            TokenType::KwFn => "`fn`",
+            TokenType::KwVoid => "`void`",
             TokenType::LitBool => "a boolean literal",
             TokenType::LitInteger => "an integer literal",
             TokenType::LitFloat => "a float literal",

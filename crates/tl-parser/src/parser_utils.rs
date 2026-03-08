@@ -1,4 +1,4 @@
-use crate::{FixedToken, Parser, common::AstId};
+use crate::{FixedToken, Parser, primitive::AstId};
 use tl_lexer::Token;
 
 impl<I> Parser<I>

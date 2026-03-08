@@ -7,6 +7,7 @@ where
 {
     first: Option<Token>,
     second: Option<Token>,
+    third: Option<Token>,
     iter: I,
 }
 
@@ -18,6 +19,7 @@ where
         let mut lookahead = Self {
             first: iter.next(),
             second: iter.next(),
+            third: iter.next(),
             iter,
         };
 
@@ -33,11 +35,16 @@ where
         self.second.as_ref()
     }
 
+    pub fn third(&self) -> Option<&Token> {
+        self.third.as_ref()
+    }
+
     pub fn next(&mut self) -> Option<Token> {
         let token = self.first.take();
 
         self.first = self.second.take();
-        self.second = self.iter.next();
+        self.second = self.third.take();
+        self.third = self.iter.next();
         self.trim();
 
         token
@@ -49,14 +56,23 @@ where
             Some(TokenKind::Whitespace | TokenKind::Comment(_))
         ) {
             self.first = self.second.take();
-            self.second = self.iter.next();
+            self.second = self.third.take();
+            self.third = self.iter.next();
         }
 
         while matches!(
             self.second.as_ref().map(|token| &token.kind),
             Some(TokenKind::Whitespace | TokenKind::Comment(_))
         ) {
-            self.second = self.iter.next();
+            self.second = self.third.take();
+            self.third = self.iter.next();
+        }
+
+        while matches!(
+            self.third.as_ref().map(|token| &token.kind),
+            Some(TokenKind::Whitespace | TokenKind::Comment(_))
+        ) {
+            self.third = self.iter.next();
         }
     }
 }

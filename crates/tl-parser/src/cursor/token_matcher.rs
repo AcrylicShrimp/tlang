@@ -1,5 +1,5 @@
 use super::{token_matcher_context_provider::TokenMatcherContextProvider, token_type::TokenType};
-use crate::{FixedToken, common::AstId};
+use crate::{FixedToken, primitive::AstId};
 use tl_lexer::TokenKind;
 
 pub struct TokenMatcher<C>

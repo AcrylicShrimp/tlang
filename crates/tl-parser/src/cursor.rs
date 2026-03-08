@@ -76,6 +76,10 @@ where
         self.lookahead.second()
     }
 
+    pub fn third_token(&self) -> Option<&Token> {
+        self.lookahead.third()
+    }
+
     pub fn first(&mut self) -> TokenMatcher<impl TokenMatcherContextProvider> {
         struct First<'a, I>
         where
@@ -140,6 +144,36 @@ where
         }
 
         TokenMatcher::new(Second {
+            lookahead: &mut self.lookahead,
+        })
+    }
+
+    pub fn third(&mut self) -> TokenMatcher<impl TokenMatcherContextProvider> {
+        struct Third<'a, I>
+        where
+            I: Iterator<Item = Token>,
+        {
+            lookahead: &'a mut TokenLookahead<I>,
+        }
+
+        impl<'a, I> TokenMatcherContextProvider for Third<'a, I>
+        where
+            I: Iterator<Item = Token>,
+        {
+            fn token(&self) -> Option<&Token> {
+                self.lookahead.third()
+            }
+
+            fn consume(&mut self) -> Option<Token> {
+                panic!("cannot consume third token");
+            }
+
+            fn add_expected_token(&mut self, _token: TokenType) {
+                // no-op
+            }
+        }
+
+        TokenMatcher::new(Third {
             lookahead: &mut self.lookahead,
         })
     }
