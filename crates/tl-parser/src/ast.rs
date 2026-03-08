@@ -115,12 +115,14 @@ pub struct AstExposeRefFn {
     pub kw_fn: KwFn,
     pub name: AstId,
     pub paren_open: PuncParenOpen,
-    pub params: Option<Punctuated<AstFnParam, PuncComma>>,
+    pub params: Option<AstFnParams>,
     pub paren_close: PuncParenClose,
     pub arrow: PuncArrow,
     pub return_ty: AstTypeName,
     pub semicolon: PuncSemicolon,
 }
+
+pub type AstFnParams = PunctuatedNoTrailing<AstFnParam, PuncComma>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AstFnParam {

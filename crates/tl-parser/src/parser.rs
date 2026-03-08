@@ -96,6 +96,11 @@ where
 
         let kind = if self.cursor.first().is(TokenType::KwUse) {
             AstTopLevelItemKind::Use(self.parse_use()?)
+        } else if self.cursor.first().is(TokenType::KwExpose)
+            && self.cursor.second().is(TokenType::KwRef)
+            && self.cursor.third().is(TokenType::KwFn)
+        {
+            AstTopLevelItemKind::ExposeRefFn(self.parse_expose_ref_fn()?)
         } else {
             self.diagnostics
                 .push(self.cursor.make_unexpected_token_err());
@@ -175,6 +180,73 @@ where
             span: self.span_range(span),
             path_sep,
             star,
+        })
+    }
+
+    pub fn parse_expose_ref_fn(&mut self) -> Option<AstExposeRefFn> {
+        let span = self.cursor.span();
+
+        let kw_expose = self.parse_fixed()?;
+        let kw_ref = self.parse_fixed()?;
+        let kw_fn = self.parse_fixed()?;
+        let name = self.parse_id()?;
+        let paren_open = self.parse_fixed()?;
+        let params = if self.cursor.first().is(TokenType::ParenClose) {
+            None
+        } else {
+            Some(self.parse_params()?)
+        };
+        let paren_close = self.parse_fixed()?;
+        let arrow = self.parse_fixed()?;
+        let return_ty = self.parse_type_name()?;
+        let semicolon = self.parse_fixed()?;
+
+        Some(AstExposeRefFn {
+            span: self.span_range(span),
+            kw_expose,
+            kw_ref,
+            kw_fn,
+            name,
+            paren_open,
+            params,
+            paren_close,
+            arrow,
+            return_ty,
+            semicolon,
+        })
+    }
+
+    pub fn parse_params(&mut self) -> Option<AstFnParams> {
+        let span = self.cursor.span();
+
+        let first = self.parse_fn_param()?;
+        let mut rest = Vec::new();
+
+        while self.cursor.first().is(TokenType::Comma) {
+            let comma = self.parse_fixed()?;
+            let param = self.parse_fn_param()?;
+            rest.push((comma, param));
+        }
+
+        Some(AstFnParams {
+            span: self.span_range(span),
+            first,
+            rest,
+        })
+    }
+
+    pub fn parse_fn_param(&mut self) -> Option<AstFnParam> {
+        let span = self.cursor.span();
+
+        let id = self.parse_id()?;
+        let colon = self.parse_fixed()?;
+        let ty = self.parse_type_name()?;
+
+        Some(AstFnParam {
+            span: self.span_range(span),
+            id,
+            colon,
+            ty,
         })
     }
 }
