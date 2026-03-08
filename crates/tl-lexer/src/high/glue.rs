@@ -25,6 +25,7 @@ pub fn glue(lhs: &InterTokenKind, rhs: &InterTokenKind) -> Option<InterTokenKind
             suffix: Some(id.to_owned()),
         }),
         (Kind::Sub, Kind::Gt) => Some(Kind::Arrow), // `->`
+        (Kind::Colon, Kind::Colon) => Some(Kind::PathSep), // `::`
         (Kind::Add, Kind::Assign) => Some(Kind::AddAssign), // `+=`
         (Kind::Sub, Kind::Assign) => Some(Kind::SubAssign), // `-=`
         (Kind::Mul, Kind::Assign) => Some(Kind::MulAssign), // `*=`

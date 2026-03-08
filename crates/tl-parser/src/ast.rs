@@ -29,10 +29,10 @@ pub mod primitive {
     #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct AstTypeName {
         pub span: Span,
-        pub id: AstId,
+        pub path: AstPath,
     }
 
-    pub type AstPath = PunctuatedNoTrailing<AstId, PuncDot>;
+    pub type AstPath = PunctuatedNoTrailing<AstId, PuncPathSep>;
 }
 
 pub mod utils {
@@ -103,7 +103,7 @@ pub struct AstUseTailAs {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AstUseTailAll {
     pub span: Span,
-    pub dot: PuncDot,
+    pub path_sep: PuncPathSep,
     pub star: OpMul,
 }
 

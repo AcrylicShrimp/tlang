@@ -1,1 +1,1 @@
-use core.printf;
+use core::printf;

@@ -43,6 +43,7 @@ pub enum TokenKind {
 
     // punc - compound
     Arrow,
+    PathSep,
 
     // operators - assignments
     Assign,

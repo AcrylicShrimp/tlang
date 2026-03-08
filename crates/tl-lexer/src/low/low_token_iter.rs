@@ -473,10 +473,13 @@ mod tests {
     #[test]
     fn test_compound_operators_are_split_currently() {
         assert_kinds(
-            "-> == += <<= >>= && || ^=",
+            "-> :: == += <<= >>= && || ^=",
             &[
                 LowTokenKind::Sub,
                 LowTokenKind::Gt,
+                LowTokenKind::Whitespace,
+                LowTokenKind::Colon,
+                LowTokenKind::Colon,
                 LowTokenKind::Whitespace,
                 LowTokenKind::Assign,
                 LowTokenKind::Assign,

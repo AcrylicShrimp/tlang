@@ -38,6 +38,7 @@ pub enum TokenType {
 
     // punc - compound
     Arrow,
+    PathSep,
 
     // operators - assignments
     Assign,
@@ -110,6 +111,7 @@ impl TokenType {
             TokenKind::BracketClose => Self::BracketClose,
             TokenKind::At => Self::At,
             TokenKind::Arrow => Self::Arrow,
+            TokenKind::PathSep => Self::PathSep,
             TokenKind::Assign => Self::Assign,
             TokenKind::AddAssign => Self::AddAssign,
             TokenKind::SubAssign => Self::SubAssign,
@@ -176,6 +178,7 @@ impl TokenType {
             TokenType::BracketClose => "`]`",
             TokenType::At => "`@`",
             TokenType::Arrow => "`->`",
+            TokenType::PathSep => "`::`",
             TokenType::Assign => "`=`",
             TokenType::AddAssign => "`+=`",
             TokenType::SubAssign => "`-=`",

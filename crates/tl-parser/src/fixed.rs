@@ -64,6 +64,7 @@ pub mod punctuations {
     define_fixed!(PuncBracketClose, 1, TokenType::BracketClose);
     define_fixed!(PuncAt, 1, TokenType::At);
     define_fixed!(PuncArrow, 2, TokenType::Arrow);
+    define_fixed!(PuncPathSep, 2, TokenType::PathSep);
 }
 
 pub mod operators {

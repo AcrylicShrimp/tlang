@@ -1,1 +1,1 @@
-use core.*;
+use core::*;

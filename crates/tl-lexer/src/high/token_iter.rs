@@ -71,7 +71,7 @@ mod tests {
     #[test]
     fn test_tokens_glue() {
         test_tokens(
-            "<< >> == != <= >= <<= >>=",
+            "<< >> == != <= >= :: <<= >>=",
             &[
                 TokenKind::BitwiseShiftLeft,
                 TokenKind::Whitespace,
@@ -85,12 +85,19 @@ mod tests {
                 TokenKind::Whitespace,
                 TokenKind::Ge,
                 TokenKind::Whitespace,
+                TokenKind::PathSep,
+                TokenKind::Whitespace,
                 TokenKind::BitwiseShiftLeftAssign,
                 TokenKind::Whitespace,
                 TokenKind::BitwiseShiftRightAssign,
                 TokenKind::Eof,
             ],
         );
+    }
+
+    #[test]
+    fn test_tokens_path_sep_before_assign() {
+        test_tokens("::=", &[TokenKind::PathSep, TokenKind::Assign, TokenKind::Eof]);
     }
 
     #[test]

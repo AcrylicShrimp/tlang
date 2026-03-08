@@ -44,6 +44,7 @@ pub enum InterTokenKind {
 
     // punc - compound
     Arrow,
+    PathSep,
 
     // operators - assignments
     Assign,

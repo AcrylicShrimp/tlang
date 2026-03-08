@@ -50,6 +50,7 @@ pub fn promote_to_token(token: InterToken) -> Token {
         From::At => To::At,
         From::Bang => To::Unknown,
         From::Arrow => To::Arrow,
+        From::PathSep => To::PathSep,
         From::Assign => To::Assign,
         From::AddAssign => To::AddAssign,
         From::SubAssign => To::SubAssign,

@@ -35,6 +35,41 @@ where
     }
 }
 
+impl<T> Parser<T>
+where
+    T: Iterator<Item = Token>,
+{
+    pub fn parse_type_name(&mut self) -> Option<AstTypeName> {
+        let span = self.cursor.span();
+
+        let path = self.parse_path()?;
+
+        Some(AstTypeName {
+            span: self.span_range(span),
+            path,
+        })
+    }
+
+    pub fn parse_path(&mut self) -> Option<AstPath> {
+        let span = self.cursor.span();
+
+        let first = self.parse_id()?;
+        let mut rest = Vec::new();
+
+        while self.cursor.first().is(TokenType::PathSep) && self.cursor.second().is(TokenType::Id) {
+            let path_sep = self.parse_fixed()?;
+            let id = self.parse_id()?;
+            rest.push((path_sep, id));
+        }
+
+        Some(AstPath {
+            span: self.span_range(span),
+            first,
+            rest,
+        })
+    }
+}
+
 impl<I> Parser<I>
 where
     I: Iterator<Item = Token>,
@@ -79,12 +114,13 @@ where
 
         let kw_use = self.parse_fixed()?;
         let path = self.parse_path()?;
-        let tail =
-            if self.cursor.first().is(TokenType::Dot) || self.cursor.first().is(TokenType::KwAs) {
-                Some(self.parse_use_tail()?)
-            } else {
-                None
-            };
+        let tail = if self.cursor.first().is(TokenType::KwAs)
+            || self.cursor.first().is(TokenType::PathSep)
+        {
+            Some(self.parse_use_tail()?)
+        } else {
+            None
+        };
         let semicolon = self.parse_fixed()?;
 
         Some(AstUse {
@@ -96,31 +132,12 @@ where
         })
     }
 
-    pub fn parse_path(&mut self) -> Option<AstPath> {
-        let span = self.cursor.span();
-
-        let first = self.parse_id()?;
-        let mut rest = Vec::new();
-
-        while self.cursor.first().is(TokenType::Dot) && self.cursor.second().is(TokenType::Id) {
-            let dot = self.parse_fixed()?;
-            let name = self.parse_id()?;
-            rest.push((dot, name));
-        }
-
-        Some(AstPath {
-            span: self.span_range(span),
-            first,
-            rest,
-        })
-    }
-
     pub fn parse_use_tail(&mut self) -> Option<AstUseTail> {
         let span = self.cursor.span();
 
         let kind = if self.cursor.first().is(TokenType::KwAs) {
             AstUseTailKind::As(self.parse_use_tail_as()?)
-        } else if self.cursor.first().is(TokenType::Dot) {
+        } else if self.cursor.first().is(TokenType::PathSep) {
             AstUseTailKind::All(self.parse_use_tail_all()?)
         } else {
             self.diagnostics
@@ -151,12 +168,12 @@ where
     pub fn parse_use_tail_all(&mut self) -> Option<AstUseTailAll> {
         let span = self.cursor.span();
 
-        let dot = self.parse_fixed()?;
+        let path_sep = self.parse_fixed()?;
         let star = self.parse_fixed()?;
 
         Some(AstUseTailAll {
             span: self.span_range(span),
-            dot,
+            path_sep,
             star,
         })
     }

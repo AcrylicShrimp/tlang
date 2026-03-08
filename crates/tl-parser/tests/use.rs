@@ -69,9 +69,15 @@ fn test_use_wildcard() {
         AstTopLevelItemKind::ExposeRefFn(_) => panic!("expected use item"),
     };
 
+    assert_eq!(use_item.path.first.name, "core");
+    assert!(use_item.path.rest.is_empty());
+
     let tail = use_item.tail.as_ref().expect("expected wildcard tail");
     match &tail.kind {
-        AstUseTailKind::All(_) => {}
+        AstUseTailKind::All(all) => {
+            assert_eq!(all.path_sep.span().lo, tail.span.lo);
+            assert_eq!(all.star.span().hi, tail.span.hi);
+        }
         AstUseTailKind::As(_) => panic!("expected wildcard tail"),
     }
 }

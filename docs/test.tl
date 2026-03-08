@@ -7,10 +7,10 @@
 # but if the module name is `core`, it targets the standard library, shipped with the compiler.
 # this means that you can't name your own modules `core`.
 # also, all import statements must be top-level statements.
-use core.printf;
+use core::printf;
 
 # you can also import all symbols from a module like this.
-use core.*;
+use core::*;
 
 # you can rename a module to avoid conflicts like this.
 use core as my_core;
